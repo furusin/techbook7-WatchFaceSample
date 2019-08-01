@@ -3,6 +3,7 @@ package net.furusin.www.watchfacesample
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.Intent.ACTION_BATTERY_CHANGED
 import android.content.IntentFilter
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -12,6 +13,7 @@ import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
 import android.graphics.Paint
 import android.graphics.Rect
+import android.os.BatteryManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Message
@@ -19,6 +21,7 @@ import androidx.palette.graphics.Palette
 import android.support.wearable.watchface.CanvasWatchFaceService
 import android.support.wearable.watchface.WatchFaceService
 import android.support.wearable.watchface.WatchFaceStyle
+import android.util.Log
 import android.view.SurfaceHolder
 import android.widget.Toast
 
@@ -217,6 +220,15 @@ class MyWatchFace : CanvasWatchFaceService() {
             invalidate()
         }
 
+        private fun getBatteryLevel(): Int? {
+            return registerReceiver(null, IntentFilter(ACTION_BATTERY_CHANGED))?.let{batteryInfo ->
+                val max = batteryInfo.getIntExtra(BatteryManager.EXTRA_SCALE, -1).toDouble()
+                val level = batteryInfo.getIntExtra(BatteryManager.EXTRA_LEVEL, -1).toDouble()
+
+                (level / max * 100).toInt()
+            }
+        }
+
         override fun onAmbientModeChanged(inAmbientMode: Boolean) {
             super.onAmbientModeChanged(inAmbientMode)
             mAmbient = inAmbientMode
@@ -371,6 +383,8 @@ class MyWatchFace : CanvasWatchFaceService() {
 
             drawBackground(canvas)
             drawWatchFace(canvas)
+
+            Log.d("test", "battery = ${getBatteryLevel()}")
         }
 
         private fun drawBackground(canvas: Canvas) {
