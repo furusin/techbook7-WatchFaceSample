@@ -1,10 +1,7 @@
 package net.furusin.www.watchfacesample
 
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
+import android.content.*
 import android.content.Intent.ACTION_BATTERY_CHANGED
-import android.content.IntentFilter
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
@@ -17,6 +14,9 @@ import android.os.BatteryManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Message
+import android.support.wearable.complications.ComplicationData
+import android.support.wearable.complications.SystemProviders
+import android.support.wearable.complications.rendering.ComplicationDrawable
 import androidx.palette.graphics.Palette
 import android.support.wearable.watchface.CanvasWatchFaceService
 import android.support.wearable.watchface.WatchFaceService
@@ -81,6 +81,9 @@ class MyWatchFace : CanvasWatchFaceService() {
     }
 
     inner class Engine : CanvasWatchFaceService.Engine() {
+        private val COMPLICATION_ID = 0
+        private var complicationData: ComplicationData? = null
+        private val complicationDrawable = ComplicationDrawable(this@MyWatchFace)
 
         private lateinit var mCalendar: Calendar
 
@@ -134,6 +137,28 @@ class MyWatchFace : CanvasWatchFaceService() {
 
             initializeBackground()
             initializeWatchFace()
+            initializeComplicationData()
+        }
+
+        /**
+         * 電池の情報を取得するComplicationを準備する
+         */
+        private fun initializeComplicationData() {
+            setDefaultSystemComplicationProvider(
+                COMPLICATION_ID,
+                SystemProviders.WATCH_BATTERY,
+                ComplicationData.TYPE_RANGED_VALUE
+            )
+
+            complicationDrawable.run {
+                setBorderColorActive(Color.RED)
+                setBorderColorAmbient(Color.WHITE)
+
+                setRangedValuePrimaryColorActive(Color.RED)
+                setRangedValuePrimaryColorAmbient(Color.WHITE)
+            }
+
+            setActiveComplications(COMPLICATION_ID)
         }
 
         private fun initializeBackground() {
@@ -213,6 +238,10 @@ class MyWatchFace : CanvasWatchFaceService() {
             mBurnInProtection = properties.getBoolean(
                 WatchFaceService.PROPERTY_BURN_IN_PROTECTION, false
             )
+
+            // 追記
+            complicationDrawable.setLowBitAmbient(mLowBitAmbient)
+            complicationDrawable.setBurnInProtection(mBurnInProtection)
         }
 
         override fun onTimeTick() {
@@ -221,7 +250,7 @@ class MyWatchFace : CanvasWatchFaceService() {
         }
 
         private fun getBatteryLevel(): Int? {
-            return registerReceiver(null, IntentFilter(ACTION_BATTERY_CHANGED))?.let{batteryInfo ->
+            return registerReceiver(null, IntentFilter(ACTION_BATTERY_CHANGED))?.let { batteryInfo ->
                 val max = batteryInfo.getIntExtra(BatteryManager.EXTRA_SCALE, -1).toDouble()
                 val level = batteryInfo.getIntExtra(BatteryManager.EXTRA_LEVEL, -1).toDouble()
 
@@ -234,6 +263,8 @@ class MyWatchFace : CanvasWatchFaceService() {
             mAmbient = inAmbientMode
 
             updateWatchHandStyle()
+
+            complicationDrawable.setInAmbientMode(mAmbient)
 
             // Check and trigger whether or not timer should be running (only
             // in active mode).
@@ -338,6 +369,23 @@ class MyWatchFace : CanvasWatchFaceService() {
             if (!mBurnInProtection && !mLowBitAmbient) {
                 initGrayBackgroundBitmap()
             }
+
+
+            /**
+             * Complicationを描画する
+             */
+            val sizeOfComplication = width / 4
+            val midpointOfScreen = width / 2
+
+            val horizontalOffset = (midpointOfScreen - sizeOfComplication) / 2
+            val verticalOffset = midpointOfScreen - sizeOfComplication / 2
+
+            complicationDrawable.setBounds(
+                (midpointOfScreen + horizontalOffset),
+                verticalOffset,
+                (midpointOfScreen + horizontalOffset + sizeOfComplication),
+                (verticalOffset + sizeOfComplication)
+            )
         }
 
         private fun initGrayBackgroundBitmap() {
@@ -376,6 +424,11 @@ class MyWatchFace : CanvasWatchFaceService() {
             invalidate()
         }
 
+        override fun onComplicationDataUpdate(watchFaceComplicationId: Int, data: ComplicationData?) {
+            complicationData = data
+            complicationDrawable.setComplicationData(data)
+        }
+
 
         override fun onDraw(canvas: Canvas, bounds: Rect) {
             val now = System.currentTimeMillis()
@@ -383,6 +436,8 @@ class MyWatchFace : CanvasWatchFaceService() {
 
             drawBackground(canvas)
             drawWatchFace(canvas)
+            complicationDrawable.draw(canvas, now)
+
 
             Log.d("test", "battery = ${getBatteryLevel()}")
         }
