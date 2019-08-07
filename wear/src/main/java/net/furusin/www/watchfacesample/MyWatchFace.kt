@@ -370,10 +370,13 @@ class MyWatchFace : CanvasWatchFaceService() {
                 initGrayBackgroundBitmap()
             }
 
+            drawComplications(width, height)
+        }
 
-            /**
-             * Complicationを描画する
-             */
+        /**
+         * Complicationを描画する
+         */
+        private fun drawComplications(width: Int, height: Int) {
             val sizeOfComplication = width / 4
             val midpointOfScreen = width / 2
 
@@ -386,6 +389,7 @@ class MyWatchFace : CanvasWatchFaceService() {
                 (midpointOfScreen + horizontalOffset + sizeOfComplication),
                 (verticalOffset + sizeOfComplication)
             )
+
         }
 
         private fun initGrayBackgroundBitmap() {
