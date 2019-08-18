@@ -1,33 +1,24 @@
 package net.furusin.www.watchfacesample
 
-import android.content.*
-import android.content.Intent.ACTION_BATTERY_CHANGED
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.ColorMatrix
-import android.graphics.ColorMatrixColorFilter
-import android.graphics.Paint
-import android.graphics.Rect
-import android.os.BatteryManager
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.graphics.*
 import android.os.Bundle
 import android.os.Handler
 import android.os.Message
 import android.support.wearable.complications.ComplicationData
 import android.support.wearable.complications.SystemProviders
 import android.support.wearable.complications.rendering.ComplicationDrawable
-import androidx.palette.graphics.Palette
 import android.support.wearable.watchface.CanvasWatchFaceService
 import android.support.wearable.watchface.WatchFaceService
 import android.support.wearable.watchface.WatchFaceStyle
-import android.util.Log
 import android.view.SurfaceHolder
 import android.widget.Toast
-
+import androidx.palette.graphics.Palette
 import java.lang.ref.WeakReference
-import java.util.Calendar
-import java.util.TimeZone
+import java.util.*
 
 /**
  * Updates rate in milliseconds for interactive mode. We update once a second to advance the
@@ -144,20 +135,21 @@ class MyWatchFace : CanvasWatchFaceService() {
          * 電池の情報を取得するComplicationを準備する
          */
         private fun initializeComplicationData() {
+            // COMPLICATION_IDに紐付けるComplicationの種類とデータを定義
             setDefaultSystemComplicationProvider(
                 COMPLICATION_ID,
                 SystemProviders.WATCH_BATTERY,
                 ComplicationData.TYPE_RANGED_VALUE
             )
 
-            complicationDrawable.run {
-                setBorderColorActive(Color.RED)
-                setBorderColorAmbient(Color.WHITE)
+            // 画面に表示する際の色を定義
+            complicationDrawable.setBorderColorActive(Color.RED)
+            complicationDrawable.setBorderColorAmbient(Color.WHITE)
 
-                setRangedValuePrimaryColorActive(Color.RED)
-                setRangedValuePrimaryColorAmbient(Color.WHITE)
-            }
+            complicationDrawable.setRangedValuePrimaryColorActive(Color.RED)
+            complicationDrawable.setRangedValuePrimaryColorAmbient(Color.WHITE)
 
+            // COMPLICATION_IDのComplicationをActiveなものとして定義
             setActiveComplications(COMPLICATION_ID)
         }
 
@@ -239,8 +231,10 @@ class MyWatchFace : CanvasWatchFaceService() {
                 WatchFaceService.PROPERTY_BURN_IN_PROTECTION, false
             )
 
-            // 追記
+            // LowBitAmbientモードの設定
             complicationDrawable.setLowBitAmbient(mLowBitAmbient)
+
+            // 画面の焼付き保護の設定
             complicationDrawable.setBurnInProtection(mBurnInProtection)
         }
 
@@ -249,26 +243,18 @@ class MyWatchFace : CanvasWatchFaceService() {
             invalidate()
         }
 
-        private fun getBatteryLevel(): Int? {
-            return registerReceiver(null, IntentFilter(ACTION_BATTERY_CHANGED))?.let { batteryInfo ->
-                val max = batteryInfo.getIntExtra(BatteryManager.EXTRA_SCALE, -1).toDouble()
-                val level = batteryInfo.getIntExtra(BatteryManager.EXTRA_LEVEL, -1).toDouble()
-
-                (level / max * 100).toInt()
-            }
-        }
-
         override fun onAmbientModeChanged(inAmbientMode: Boolean) {
             super.onAmbientModeChanged(inAmbientMode)
             mAmbient = inAmbientMode
 
             updateWatchHandStyle()
 
-            complicationDrawable.setInAmbientMode(mAmbient)
-
             // Check and trigger whether or not timer should be running (only
             // in active mode).
             updateTimer()
+
+            // この1行を追加
+            complicationDrawable.setInAmbientMode(mAmbient)
         }
 
         private fun updateWatchHandStyle() {
@@ -370,13 +356,13 @@ class MyWatchFace : CanvasWatchFaceService() {
                 initGrayBackgroundBitmap()
             }
 
-            drawComplications(width, height)
+            setComplicationDrawableBounds(width, height)
         }
 
         /**
-         * Complicationを描画する
+         * Complicationを描画する場所を定義する
          */
-        private fun drawComplications(width: Int, height: Int) {
+        private fun setComplicationDrawableBounds(width: Int, height: Int) {
             val left = width / 8 * 5
             val top = height / 8 * 3
             val right = width / 8 * 7
@@ -434,9 +420,6 @@ class MyWatchFace : CanvasWatchFaceService() {
             drawBackground(canvas)
             drawWatchFace(canvas)
             complicationDrawable.draw(canvas, now)
-
-
-            Log.d("test", "battery = ${getBatteryLevel()}")
         }
 
         private fun drawBackground(canvas: Canvas) {
