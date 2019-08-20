@@ -9,6 +9,10 @@ import android.provider.MediaStore
 import android.widget.Button
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.gms.wearable.Asset
+import com.google.android.gms.wearable.PutDataMapRequest
+import com.google.android.gms.wearable.Wearable
+import java.io.ByteArrayOutputStream
 import java.io.IOException
 
 private val TAG = MainActivity::class.java.simpleName
@@ -45,12 +49,31 @@ class MainActivity : AppCompatActivity() {
             }
 
             try {
-                val bitmap = MediaStore.Images.Media.getBitmap(contentResolver, data.data)
-                findViewById<ImageView>(R.id.imageView).setImageBitmap(bitmap.scale().cropToSquare())
+                val bitmap = MediaStore.Images.Media.getBitmap(contentResolver, data.data).scale().cropToSquare()
+                findViewById<ImageView>(R.id.imageView).setImageBitmap(bitmap)
+
+                // bitmapをWatchFaceに送信する
+                val asset = createAssetFromBitmap(bitmap)
+
+                val dataMapRequest = PutDataMapRequest.create("/image").also { putDataMapRequest ->
+                    putDataMapRequest.dataMap.putAsset("profileImage", asset)
+                }
+
+                val putDataMapRequest = dataMapRequest.asPutDataRequest()
+                val putTask = Wearable.getDataClient(this).putDataItem(putDataMapRequest)
             } catch (e: IOException) {
                 e.printStackTrace()
             }
         }
+    }
+
+    /**
+     * BitmapからAssetを生成する
+     * @param bitmap Assetとして送信するBitmap
+     */
+    private fun createAssetFromBitmap(bitmap: Bitmap): Asset = ByteArrayOutputStream().let { byteStream ->
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteStream)
+        Asset.createFromBytes(byteStream.toByteArray())
     }
 
     /**
