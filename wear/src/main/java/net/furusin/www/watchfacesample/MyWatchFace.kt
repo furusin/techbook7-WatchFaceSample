@@ -17,6 +17,9 @@ import android.support.wearable.watchface.WatchFaceStyle
 import android.view.SurfaceHolder
 import android.widget.Toast
 import androidx.palette.graphics.Palette
+import com.google.android.gms.tasks.Tasks
+import com.google.android.gms.wearable.*
+import java.io.InputStream
 import java.lang.ref.WeakReference
 import java.util.*
 
@@ -71,7 +74,7 @@ class MyWatchFace : CanvasWatchFaceService() {
         }
     }
 
-    inner class Engine : CanvasWatchFaceService.Engine() {
+    inner class Engine : CanvasWatchFaceService.Engine(), DataClient.OnDataChangedListener {
         private val COMPLICATION_ID = 0
         private var complicationData: ComplicationData? = null
         private val complicationDrawable = ComplicationDrawable(this@MyWatchFace)
@@ -407,6 +410,7 @@ class MyWatchFace : CanvasWatchFaceService() {
             invalidate()
         }
 
+
         override fun onComplicationDataUpdate(watchFaceComplicationId: Int, data: ComplicationData?) {
             complicationData = data
             complicationDrawable.setComplicationData(data)
@@ -577,6 +581,26 @@ class MyWatchFace : CanvasWatchFaceService() {
                 val delayMs = INTERACTIVE_UPDATE_RATE_MS - timeMs % INTERACTIVE_UPDATE_RATE_MS
                 mUpdateTimeHandler.sendEmptyMessageDelayed(MSG_UPDATE_TIME, delayMs)
             }
+        }
+
+        override fun onDataChanged(dataEvents: DataEventBuffer) {
+            dataEvents
+                .filter { it.type == DataEvent.TYPE_CHANGED && it.dataItem.uri.path == "/image" }
+                .forEach { event ->
+                    DataMapItem.fromDataItem(event.dataItem)
+                        .dataMap.getAsset("profileImage")
+                        .let { asset -> loadBitmapFromAsset(asset) }
+                        ?.let { bitmap -> mBackgroundBitmap = bitmap }
+                }
+        }
+
+        private fun loadBitmapFromAsset(asset: Asset): Bitmap? {
+            // convert asset into a file descriptor and block until it's ready
+            val assetInputStream: InputStream? =
+                Tasks.await(Wearable.getDataClient(this@MyWatchFace).getFdForAsset(asset))?.inputStream
+
+            return assetInputStream?.let { BitmapFactory.decodeStream(assetInputStream) }
+
         }
     }
 }
