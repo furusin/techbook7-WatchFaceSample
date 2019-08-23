@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.provider.MediaStore
 import android.widget.Button
 import android.widget.ImageView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.gms.wearable.Asset
 import com.google.android.gms.wearable.PutDataMapRequest
@@ -49,18 +50,24 @@ class MainActivity : AppCompatActivity() {
             }
 
             try {
-                val bitmap = MediaStore.Images.Media.getBitmap(contentResolver, data.data).scale().cropToSquare()
-                findViewById<ImageView>(R.id.imageView).setImageBitmap(bitmap)
+                val resizedBitmap = MediaStore.Images.Media.getBitmap(contentResolver, data.data).scale().cropToSquare()
+                findViewById<ImageView>(R.id.imageView).setImageBitmap(resizedBitmap)
 
                 // bitmapをWatchFaceに送信する
-                val asset = createAssetFromBitmap(bitmap)
+                val asset = createAssetFromBitmap(resizedBitmap)
 
                 val dataMapRequest = PutDataMapRequest.create("/image").also { putDataMapRequest ->
                     putDataMapRequest.dataMap.putAsset("profileImage", asset)
                 }
 
                 val putDataMapRequest = dataMapRequest.asPutDataRequest()
+
                 val putTask = Wearable.getDataClient(this).putDataItem(putDataMapRequest)
+                putTask.addOnCompleteListener {
+                    Toast.makeText(this, "sending image Completed!", Toast.LENGTH_LONG).show()
+                }.addOnFailureListener {
+                    Toast.makeText(this, "sending image Failure...", Toast.LENGTH_LONG).show()
+                }
             } catch (e: IOException) {
                 e.printStackTrace()
             }
