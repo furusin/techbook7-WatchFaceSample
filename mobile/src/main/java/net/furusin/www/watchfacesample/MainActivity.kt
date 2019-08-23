@@ -53,16 +53,16 @@ class MainActivity : AppCompatActivity() {
                 val resizedBitmap = MediaStore.Images.Media.getBitmap(contentResolver, data.data).scale().cropToSquare()
                 findViewById<ImageView>(R.id.imageView).setImageBitmap(resizedBitmap)
 
-                // bitmapをWatchFaceに送信する
                 val asset = createAssetFromBitmap(resizedBitmap)
-
                 val dataMapRequest = PutDataMapRequest.create("/image").also { putDataMapRequest ->
                     putDataMapRequest.dataMap.putAsset("profileImage", asset)
                 }
-
                 val putDataMapRequest = dataMapRequest.asPutDataRequest()
 
+                // データをWatchFaceに送信する
                 val putTask = Wearable.getDataClient(this).putDataItem(putDataMapRequest)
+
+                // Complete/FailureのListenerを追加
                 putTask.addOnCompleteListener {
                     Toast.makeText(this, "sending image Completed!", Toast.LENGTH_LONG).show()
                 }.addOnFailureListener {
