@@ -78,10 +78,11 @@ class MainActivity : AppCompatActivity() {
      * BitmapからAssetを生成する
      * @param bitmap Assetとして送信するBitmap
      */
-    private fun createAssetFromBitmap(bitmap: Bitmap): Asset = ByteArrayOutputStream().let { byteStream ->
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteStream)
-        Asset.createFromBytes(byteStream.toByteArray())
-    }
+    private fun createAssetFromBitmap(bitmap: Bitmap): Asset =
+        ByteArrayOutputStream().let { byteStream ->
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteStream)
+            Asset.createFromBytes(byteStream.toByteArray())
+        }
 
     /**
      * 画像をリサイズする
