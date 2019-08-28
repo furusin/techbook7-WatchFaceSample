@@ -594,6 +594,9 @@ class MyWatchFace : CanvasWatchFaceService() {
                 }
         }
 
+        /**
+         * AssetからBitmapを取り出す
+         */
         private fun loadBitmapFromAsset(asset: Asset): Bitmap? {
             // convert asset into a file descriptor and block until it's ready
             val assetInputStream: InputStream? =
