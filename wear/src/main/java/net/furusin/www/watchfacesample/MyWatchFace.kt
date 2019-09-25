@@ -129,6 +129,8 @@ class MyWatchFace : CanvasWatchFaceService() {
 
             mCalendar = Calendar.getInstance()
 
+            Wearable.getDataClient(this@MyWatchFace).addListener(this)
+
             initializeBackground()
             initializeWatchFace()
             initializeComplicationData()
@@ -587,23 +589,25 @@ class MyWatchFace : CanvasWatchFaceService() {
             dataEvents
                 .filter { it.type == DataEvent.TYPE_CHANGED && it.dataItem.uri.path == "/image" }
                 .forEach { event ->
-                    DataMapItem.fromDataItem(event.dataItem)
-                        .dataMap.getAsset("profileImage")
-                        .let { asset -> loadBitmapFromAsset(asset) }
-                        ?.let { bitmap -> mBackgroundBitmap = bitmap }
+                    val getImage = GetImage()
+                    DataMapItem.fromDataItem(event.dataItem).dataMap.getAsset("profileImage")
+                        .let { asset -> getImage.execute(asset) }
                 }
         }
 
         /**
          * AssetからBitmapを取り出す
          */
-        private fun loadBitmapFromAsset(asset: Asset): Bitmap? {
-            // convert asset into a file descriptor and block until it's ready
-            val assetInputStream: InputStream? =
-                Tasks.await(Wearable.getDataClient(this@MyWatchFace).getFdForAsset(asset))?.inputStream
+        inner class GetImage : AsyncTask<Asset, Void, Void>() {
+            override fun doInBackground(vararg asset: Asset): Void? {
+                // convert asset into a file descriptor and block until it's ready
+                Tasks.await(Wearable.getDataClient(this@MyWatchFace).getFdForAsset(asset[0]))
+                    .inputStream.also { assetInputStream ->
+                    mBackgroundBitmap = BitmapFactory.decodeStream(assetInputStream)
+                }
 
-            return assetInputStream?.let { BitmapFactory.decodeStream(assetInputStream) }
-
+                return null
+            }
         }
     }
 }
