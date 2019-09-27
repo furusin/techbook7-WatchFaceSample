@@ -415,7 +415,10 @@ class MyWatchFace : CanvasWatchFaceService() {
         }
 
 
-        override fun onComplicationDataUpdate(watchFaceComplicationId: Int, data: ComplicationData?) {
+        override fun onComplicationDataUpdate(
+            watchFaceComplicationId: Int,
+            data: ComplicationData?
+        ) {
             complicationData = data
             complicationDrawable.setComplicationData(data)
         }
@@ -591,16 +594,15 @@ class MyWatchFace : CanvasWatchFaceService() {
             dataEvents
                 .filter { it.type == DataEvent.TYPE_CHANGED && it.dataItem.uri.path == "/image" }
                 .forEach { event ->
-                    val getImage = GetImage()
                     DataMapItem.fromDataItem(event.dataItem).dataMap.getAsset("profileImage")
-                        .let { asset -> getImage.execute(asset) }
+                        .let { asset -> BitmapLoader().execute(asset) }
                 }
         }
 
         /**
          * AssetからBitmapを取り出す
          */
-        inner class GetImage : AsyncTask<Asset, Void, Void>() {
+        inner class BitmapLoader : AsyncTask<Asset, Void, Void>() {
             override fun doInBackground(vararg asset: Asset): Void? {
                 // convert asset into a file descriptor and block until it's ready
                 Tasks.await(Wearable.getDataClient(this@MyWatchFace).getFdForAsset(asset[0]))
